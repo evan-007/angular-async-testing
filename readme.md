@@ -1,9 +1,9 @@
-Testing countries & capitals
+Testing an Asynchronous Service with Jasmine 2.0
 =====================================
 
-`karma init` installs jasmine 1.3 by default, 2.0 has cleaner syntax for asynchronous tests, but doesn't support all of the same libraries.
+`karma init` installs jasmine 1.3 by default. Version 2.0 has cleaner syntax for asynchronous tests, but doesn't support all of the same libraries. This is written for 2.0: `npm install karma-jasmine@2_0 --save-dev`
 
-Testing an Asynchronous Service with Jasmine 2.0
+Using `done()`
 -------------------------
 
 If there is a service that uses promises, like:
@@ -39,7 +39,7 @@ Any tests for this service will not resolve automatically because of the promise
     });
   
 This test will never fail because `myFactory` never resolves. In jasmine 2.0 pass `done` into the `it` block and call it
-to resolve the asyn call:
+to resolve everything:
 
     it('finishes', function(done){
         inject(function(myFactory, $httpBackend){
@@ -129,33 +129,33 @@ This test also isn't really testing anything other than the configurations - it 
 
 This is nicer since it actually instantiates the route. We could also use a regex for the `templateUrl` to make the code easier to change later.
 
-But this test has an asynchronous request problem: the service in the `resolve` block never resolves, so the will fail with an `unexpected request` from the route `resolve`. We could use `$httpBackend` and `done` like in the previous example, but since we've already written a test for that service, does it really need to be tested again? And does this routing test even need to know that `resolve` calls an asynchronous function? An alternative would be to double it out with a `spy`.
+But this test has an asynchronous request problem: the service in the `resolve` block never resolves, so the test will fail with an `unexpected request` error from the route `resolve`. We could use `$httpBackend` and `done` like in the previous example, but since we've already written a test for that service, does it really need to be tested again? And does this routing test even need to know that `resolve` calls an asynchronous function? An alternative would be to double it out with a `spy`.
 
 http://jasmine.github.io/2.0/introduction.html#section-Spies
 
-A spy is a double of a function. Instead of calling a function, the test will call the spy which can be created to behave like the function it replaces, but without the asynchronous call. In jasmine, there are matchers to confirm that the spy is behaving as it should.
+A spy is a double of a function. Instead of calling a function, the test will call the spy which can be created to behave like the function it replaces, but without the asynchronous call. In Jasmine, there are matchers to confirm that the spy is behaving as it should.
 
-In Jasmine spies are objects and so to properly double a function, it needs to be the method of some object:
+Jasmine spies are objects and to properly double a function the spy needs to be the method of some object:
 
     var fakeData = {
-        stuff: function(arg){
+        countryDataDouble: function(arg){
         return arg;
         }
     }
     
-This is just a plain old javascript object: `fakeData.stuff('whatever');`
+This is just a plain old javascript object: `fakeData.countryDataDouble('whatever');`
 
-The spy is setup like this: `spyOn(fakeData, 'stuff');`. `spyOn` takes two arguments: the object and one of its properties. All this means is that jasmine is now paying attention to `fakeData.stuff`. The test now has access to the `toHaveBeenCalled()` matcher that verifies that the function was actually called in the test block.
+The spy is set up like this: `spyOn(fakeData, 'countryDataDouble');`. `spyOn` takes two arguments: the object and one of its properties. All this means is that Jasmine is now paying attention to `fakeData.countryDataDouble`. The test now has access to the `toHaveBeenCalled()` matcher that verifies that the function was actually called in the test block.
 
 The next step is to tell angular to use the spy in place of the function it doubles. `$provide` is how angular registers components to inject them into a module, so the code:
 
     module(function($provide){
         $provide.factory('CountryData', function(){
-            return fakeData.stuff;
+            return fakeData.countryDataDouble;
         });
     });
     
-tells angular to use `fakeData.stuff` when the `CountryData` factory is called. Remember the `resolve` in the controller?
+tells angular to use `fakeData.countryDataDouble` when the `CountryData` factory is called. Remember the `resolve` in the controller?
 
     resolve: {
         ActiveCountry: ['CountryData', '$route', function(CountryData, $route) {
@@ -163,14 +163,14 @@ tells angular to use `fakeData.stuff` when the `CountryData` factory is called. 
         }]
     }
     
-This resolve needs a function that takes one argument, which is exactly what `fakeData.stuff` will do. The return value of this factory doesn't matter so much since we're only testing the route: it's the controller's job to set `ActiveCountry` to the appropriate `scope`.
+This resolve needs a function that takes one argument, which is exactly what `fakeData.countryDataDouble` will do. The return value of this factory doesn't matter so much since we're only testing the route: it's the controller's job to set `ActiveCountry` to the appropriate `$scope`.
 
 The full test looks like this:
 
     describe('country.js', function(){
         
         var fakeData = {
-            stuff: function(arg){
+            countryDataDouble: function(arg){
                 return arg;
             }
         }
@@ -179,11 +179,11 @@ The full test looks like this:
         
         beforeEach(function(){
         
-            spyOn(fakeData, 'stuff');
+            spyOn(fakeData, 'countryDataDouble');
         
             module(function($provide){
                 $provide.factory('CountryData', function(){
-                    return fakeData.stuff;
+                    return fakeData.countryDataDouble;
                 });
             });
         });
@@ -204,11 +204,11 @@ The full test looks like this:
         
                 expect($route.current.controller).toBe('countryCtrl');
                 expect($route.current.templateUrl).toBe('./country/country.html');
-                expect(fakeData.stuff).toHaveBeenCalledWith(id);
+                expect(fakeData.countryDataDouble).toHaveBeenCalledWith(id);
                 }); 
             });
         });
         
-Notice that instead of just `expect(fakeData.stuff).toHaveBeenCalled();` there is another matcher `toHaveBeenCalled()` that can verify that the correct arguments were also passed.
+Notice that instead of just `expect(fakeData.countryDataDouble).toHaveBeenCalled();` there is another matcher `toHaveBeenCalledWith()` that can verify that the correct arguments were also passed to the function.
 
 The first routing test only verified that the router was configured correctly. This much-improved version verifies that given the url `/countries/:id`, the router loads the correct controller and template AND passes the correct params from the url to `resolve` which then runs some function that takes those params as an argument. 
