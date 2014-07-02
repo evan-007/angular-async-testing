@@ -71,7 +71,7 @@ Using the full URL path with `$httpBackend` couples the test to the code.
 This approach works, but if the URL ever needs to change in the service, then the test must also change.
 Instead, use a minimal regex:
 
-    $httpBackend.expectGET(/http:\/\/geonames\.com\.com/).respond(responseData);
+    $httpBackend.expectGET(/http:\/\/api\.geonames\.com/).respond(responseData);
 
 As long as the URL the service calls matches that regex, `$httpBackend` will respond appropriately. Now, if the api endpoint or URL params change, the test doesn't need to change.
 
