@@ -127,7 +127,7 @@ This test also isn't really testing anything other than the configurations - it 
         });
     });
 
-This is nicer since it actually instantiates the route. We could also use a regex for the `templateUrl` to make the code easier to change later.
+This test is nicer since it actually instantiates the router. We could also use a regex for the `templateUrl` to make the code easier to change later.
 
 But this test has an asynchronous request problem: the service in the `resolve` block never resolves, so the test will fail with an `unexpected request` error from the route `resolve`. We could use `$httpBackend` and `done` like in the previous example, but since we've already written a test for that service, does it really need to be tested again? And does this routing test even need to know that `resolve` calls an asynchronous function? An alternative would be to double it out with a `spy`.
 
